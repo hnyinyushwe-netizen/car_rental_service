@@ -1,24 +1,25 @@
-// axios wrapper for reusable API calls
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: window.APP_API_BASE_URL || '/',
+const instance = axios.create({
   headers: {
-    'X-Requested-With': 'XMLHttpRequest',
-    'Accept': 'application/json',
-  },
-  withCredentials: true,
+    'X-Requested-With': 'XMLHttpRequest'
+  }
 });
 
-const tokenMeta = document.head.querySelector('meta[name="csrf-token"]');
-if (tokenMeta) {
-  api.defaults.headers.common['X-CSRF-TOKEN'] = tokenMeta.content;
-}
+const getCsrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-export default {
-  get(url, config = {}) { return api.get(url, config).then(r => r.data); },
-  post(url, data = {}, config = {}) { return api.post(url, data, config).then(r => r.data); },
-  put(url, data = {}, config = {}) { return api.put(url, data, config).then(r => r.data); },
-  delete(url, config = {}) { return api.delete(url, config).then(r => r.data); },
-  instance: api,
+instance.interceptors.request.use((config) => {
+  const token = getCsrf();
+  if (token) config.headers['X-CSRF-TOKEN'] = token;
+  return config;
+}, (err) => Promise.reject(err));
+
+export const api = {
+  instance,
+  get: (url, opts = {}) => instance.get(url, opts),
+  post: (url, data, opts = {}) => instance.post(url, data, opts),
+  put: (url, data, opts = {}) => instance.put(url, data, opts),
+  delete: (url, opts = {}) => instance.delete(url, opts)
 };
+
+export default api;
