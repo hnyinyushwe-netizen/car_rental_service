@@ -21,6 +21,7 @@ window.Chart = Chart;
 
 // Lucide icons
 import * as lucide from 'lucide';
+window.lucide = lucide;
 
 // Initialize Lucide icons when DOM is ready
 function initLucideIcons() {
@@ -33,6 +34,9 @@ function initLucideIcons() {
         }
     }
 }
+
+// expose initializer globally for pages
+window.initLucideIcons = initLucideIcons;
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
