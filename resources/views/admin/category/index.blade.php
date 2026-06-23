@@ -58,7 +58,7 @@
                             <i data-lucide="search" class="h-4 w-4"></i>
                         </span>
                         <input type="text" id="tableSearchInput" placeholder="Search categories..."
-                            class="h-9 w-full rounded-xl border border-slate-300 bg-white pl-9 pr-4 text-xs font-medium text-slate-800 shadow-sm transition focus:border-cyan-500 focus:outline-none focus:ring-4 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                            class="h-9 w-full rounded-xl border border-slate-300 bg-white pl-9 pr-4 text-xs font-medium text-slate-800 shadow-sm transition focus:border-cyan-500 focus:outline-none" />
                     </div>
                 </div>
 
@@ -104,7 +104,7 @@
                                 class="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Category
                                 Name</label>
                             <input type="text" id="category_name" placeholder="Example: SUV, Sedan, Van" required
-                                class="h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 shadow-sm transition focus:border-cyan-500 focus:outline-none focus:ring-4 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                                class="h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-800 shadow-sm transition focus:border-cyan-500 focus:outline-none" />
                         </div>
 
                         <div class="flex gap-2 pt-2">
@@ -126,7 +126,7 @@
     <div id="deleteConfirmationModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
         <div
-            class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all dark:bg-slate-800 border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
+            class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all dark:bg-slate-800 border border-slate-200 dark:border-slate-700 animate-in">
             <div class="flex flex-col items-center text-center">
                 <div
                     class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 mb-4">
@@ -150,256 +150,180 @@
     </div>
 
     @push('scripts')
-        <script src="https://unpkg.com/lucide@latest"></script>
-
         <script>
+            // Use the shared api and toast modules exposed by resources/js/app.js
             document.addEventListener('DOMContentLoaded', function() {
-                // DOM Elements references
-                const $tableBody = $('#categoriesTableBody');
-                const $form = $('#categoryForm');
-                const $categoryIdInput = $('#category_id');
-                const $categoryNameInput = $('#category_name');
-                const $saveBtn = $('#saveBtn');
-                const $cancelBtn = $('#cancelBtn');
-                const $formTitle = $('#formTitle');
-                const $formSubtitle = $('#formSubtitle');
-                const $searchInput = $('#tableSearchInput');
+                const tableBody = document.getElementById('categoriesTableBody');
+                const form = document.getElementById('categoryForm');
+                const categoryIdInput = document.getElementById('category_id');
+                const categoryNameInput = document.getElementById('category_name');
+                const saveBtn = document.getElementById('saveBtn');
+                const cancelBtn = document.getElementById('cancelBtn');
+                const formTitle = document.getElementById('formTitle');
+                const formSubtitle = document.getElementById('formSubtitle');
+                const searchInput = document.getElementById('tableSearchInput');
 
-                // Alerts Elements
-                const $successBox = $('#successBox');
-                const $successText = $('#successText');
-                const $errorBox = $('#errorBox');
-                const $errorText = $('#errorText');
+                const successBox = document.getElementById('successBox');
+                const successText = document.getElementById('successText');
+                const errorBox = document.getElementById('errorBox');
+                const errorText = document.getElementById('errorText');
 
-                // Modal Context Pointer Objects
-                const $deleteModal = $('#deleteConfirmationModal');
-                const $confirmDeleteBtn = $('#confirmDeleteBtn');
-                const $closeDeleteModalBtn = $('#closeDeleteModalBtn');
+                const deleteModal = document.getElementById('deleteConfirmationModal');
+                const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                const closeDeleteModalBtn = document.getElementById('closeDeleteModalBtn');
                 let targetDeleteId = null;
 
-                // ⭐ UPDATED: Cookie/Session Base AJAX Headers Factory with CSRF protection
-                const getHeaders = () => ({
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') // layout ထဲက token လှမ်းယူတာပါ
-                });
-
-                // ⭐ UPDATED: Universal Error Handler for State Session check
-                function handleAjaxError(xhr, fallbackMessage) {
-                    if (xhr.status === 401) {
-                        // Clear up and route back to login if session ends or expires
-                        window.location.href = "{{ url('/login') }}";
-                    } else {
-                        const msg = xhr.responseJSON?.message || fallbackMessage;
-                        showAlert('error', msg);
-                    }
-                }
-
-                function refreshIcons() {
-                    if (typeof window.initLucideIcons === 'function') {
-                        window.initLucideIcons();
-                    }
-                }
-
-                function showAlert(type, message) {
-                    $successBox.addClass('hidden');
-                    $errorBox.addClass('hidden');
-
+                function showLegacyAlert(type, message) {
+                    // keep legacy UI blocks in sync but prefer toast
                     if (type === 'success') {
-                        $successText.text(message);
-                        $successBox.removeClass('hidden');
-                    } else if (type === 'error') {
-                        $errorText.text(message);
-                        $errorBox.removeClass('hidden');
+                        successText.textContent = message;
+                        successBox.classList.remove('hidden');
+                        errorBox.classList.add('hidden');
+                    } else {
+                        errorText.textContent = message;
+                        errorBox.classList.remove('hidden');
+                        successBox.classList.add('hidden');
                     }
-                    refreshIcons();
-                    window.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
+                    if (window.toast) {
+                        if (type === 'success') window.toast.success(message);
+                        else window.toast.error(message);
+                    }
+                    if (window.initLucideIcons) window.initLucideIcons();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
 
-                $('.close-alert').on('click', function() {
-                    $(this).closest('.rounded-xl').addClass('hidden');
+                function clearLegacyAlerts() {
+                    successBox.classList.add('hidden');
+                    errorBox.classList.add('hidden');
+                }
+
+                // Live search (client-side)
+                searchInput?.addEventListener('input', function() {
+                    const q = this.value.toLowerCase().trim();
+                    tableBody.querySelectorAll('tr').forEach(row => {
+                        if (row.querySelector('td[colspan]')) return; // skip placeholder
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(q) ? '' : 'none';
+                    });
                 });
 
-                // LIVE REAL-TIME SEARCH BOX ENGINE
-                $searchInput.on('keyup', function() {
-                    const queryValue = $(this).val().toLowerCase().trim();
-                    let visibleRowsCount = 0;
-
-                    $('#noSearchResultsRow').remove();
-
-                    $tableBody.find('tr').each(function() {
-                        if ($(this).find('td').attr('colspan')) return;
-                        const nameCellText = $(this).find('td').eq(1).text().toLowerCase();
-
-                        if (nameCellText.indexOf(queryValue) > -1) {
-                            $(this).show();
-                            visibleRowsCount++;
+                // Load categories
+                async function loadCategories() {
+                    try {
+                        const res = await window.api.get('{{ url('/api/categories') }}');
+                        const data = res.data || [];
+                        if (data.length === 0) {
+                            tableBody.innerHTML = `<tr><td colspan="3" class="py-6 text-center text-slate-400">No active categories found.</td></tr>`;
                         } else {
-                            $(this).hide();
-                        }
-                    });
-
-                    if (visibleRowsCount === 0 && queryValue !== '') {
-                        $tableBody.append(`
-                            <tr id="noSearchResultsRow">
-                                <td colspan="3" class="py-8 text-center text-slate-400 dark:text-slate-500">
-                                    <div class="flex flex-col items-center justify-center gap-2">
-                                        <i data-lucide="search-x" class="h-5 w-5 text-slate-300 dark:text-slate-600"></i>
-                                        <span>No categories match "${$(this).val()}"</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        `);
-                        refreshIcons();
-                    }
-                });
-
-                // 1. READ ACTION: Load Categories from Database
-                function loadCategories() {
-                    $.ajax({
-                        url: "{{ url('/api/categories') }}",
-                        method: 'GET',
-                        headers: getHeaders(),
-                        dataType: 'json',
-                        success: function(result) {
                             let rows = '';
-
-                            if (!result.data || result.data.length === 0) {
-                                rows =
-                                    `<tr><td colspan="3" class="py-6 text-center text-slate-400">No active categories found.</td></tr>`;
-                            } else {
-                                result.data.forEach((category, index) => {
-                                    rows += `
-                                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                            <td class="py-3 px-4 font-semibold text-slate-400 dark:text-slate-500">${index + 1}</td>
-                                            <td class="py-3 px-4 font-medium text-slate-900 dark:text-white">${category.name}</td>
-                                            <td class="py-3 px-4 text-right space-x-1">
-                                                <button data-id="${category.id}" data-name="${category.name}" class="edit-btn inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-cyan-600 hover:border-cyan-500 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-900">
-                                                    <i class="h-4 w-4" data-lucide="pencil"></i>
-                                                </button>
-                                                <button data-id="${category.id}" class="delete-btn inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-red-500 hover:border-red-500 hover:bg-red-50 dark:border-slate-700 dark:bg-slate-900">
-                                                    <i class="h-4 w-4" data-lucide="trash-2"></i>
-                                                </button>
-                                            </td>
-                                        </tr>`;
-                                });
-                            }
-                            $tableBody.html(rows);
-                            $searchInput.val('');
-                            refreshIcons();
-                        },
-                        error: function(xhr) {
-                            handleAjaxError(xhr, 'Failed to fetch categories.');
+                            data.forEach((category, index) => {
+                                rows += `
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                        <td class="py-3 px-4 font-semibold text-slate-400 dark:text-slate-500">${index+1}</td>
+                                        <td class="py-3 px-4 font-medium text-slate-900 dark:text-white">${category.name}</td>
+                                        <td class="py-3 px-4 text-right space-x-1">
+                                            <button data-id="${category.id}" data-name="${category.name}" class="edit-btn inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50" title="Edit">
+                                                <i class="h-4 w-4" data-lucide="pencil"></i>
+                                            </button>
+                                            <button data-id="${category.id}" class="delete-btn inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white text-red-600 hover:bg-red-50" title="Delete">
+                                                <i class="h-4 w-4" data-lucide="trash-2"></i>
+                                            </button>
+                                        </td>
+                                    </tr>`;
+                            });
+                            tableBody.innerHTML = rows;
                         }
-                    });
+                        if (window.initLucideIcons) window.initLucideIcons();
+                    } catch (err) {
+                        console.error(err);
+                        showLegacyAlert('error', err?.message || 'Failed to fetch categories.');
+                    }
                 }
 
-                // 2. CREATE & UPDATE ACTIONS: Form Handler
-                $form.on('submit', function(e) {
+                // Form submit (create/update)
+                form?.addEventListener('submit', async function(e) {
                     e.preventDefault();
-
-                    const id = $categoryIdInput.val();
-                    const name = $categoryNameInput.val().trim();
-
-                    // ⭐ API Endpoint Mapping for Stateful Sanctum Routing
-                    const url = id ? `{{ url('/api/categories') }}/${id}` : '{{ url('/api/categories') }}';
-                    const method = id ? 'PUT' : 'POST';
-
-                    $.ajax({
-                        url: url,
-                        method: method,
-                        headers: getHeaders(),
-                        contentType: 'application/json',
-                        dataType: 'json',
-                        data: JSON.stringify({
-                            name: name
-                        }),
-                        success: function(response) {
-                            resetForm();
-                            loadCategories();
-                            const localizedMsg = id ? 'Category updated successfully.' :
-                                'Category created successfully.';
-                            showAlert('success', response.message || localizedMsg);
-                        },
-                        error: function(xhr) {
-                            handleAjaxError(xhr, 'Validation or processing error.');
+                    const id = categoryIdInput.value;
+                    const name = categoryNameInput.value.trim();
+                    if (!name) return showLegacyAlert('error', 'Name is required');
+                    try {
+                        if (id) {
+                            const res = await window.api.put(`{{ url('/api/categories') }}/${id}`, { name });
+                            showLegacyAlert('success', res.message || 'Category updated successfully.');
+                        } else {
+                            const res = await window.api.post('{{ url('/api/categories') }}', { name });
+                            showLegacyAlert('success', res.message || 'Category created successfully.');
                         }
-                    });
+                        resetForm();
+                        loadCategories();
+                    } catch (err) {
+                        console.error(err);
+                        showLegacyAlert('error', err?.response?.message || err?.message || 'Validation or processing error.');
+                    }
                 });
 
-                // 3. UI STATE CONTROL: Click Handler for Dynamic Row Buttons
-                $tableBody.on('click', 'button', function(e) {
-                    const $button = $(this);
-                    const id = $button.attr('data-id');
-
-                    if ($button.hasClass('edit-btn')) {
-                        const name = $button.attr('data-name');
-                        $categoryIdInput.val(id);
-                        $categoryNameInput.val(name);
-
-                        $formTitle.text('Edit Category');
-                        $formSubtitle.text(`Modifying entry identity #${id}`);
-                        $saveBtn.text('Update Changes');
-
-                        $cancelBtn.removeClass('hidden');
-                        $saveBtn.removeClass('w-full').addClass('w-2/3');
-                    } else if ($button.hasClass('delete-btn')) {
+                // Delegated click handlers for edit/delete
+                tableBody?.addEventListener('click', function(e) {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+                    const id = btn.getAttribute('data-id');
+                    if (btn.classList.contains('edit-btn')) {
+                        const name = btn.getAttribute('data-name');
+                        categoryIdInput.value = id;
+                        categoryNameInput.value = name;
+                        formTitle.textContent = 'Edit Category';
+                        formSubtitle.textContent = `Modifying entry identity #${id}`;
+                        saveBtn.textContent = 'Update Changes';
+                        cancelBtn.classList.remove('hidden');
+                        saveBtn.classList.remove('w-full');
+                        saveBtn.classList.add('w-2/3');
+                    } else if (btn.classList.contains('delete-btn')) {
                         targetDeleteId = id;
-                        $deleteModal.removeClass('hidden').addClass('flex');
+                        deleteModal.classList.remove('hidden');
+                        deleteModal.classList.add('flex');
                     }
                 });
 
-                function hideDeleteModal() {
-                    $deleteModal.addClass('hidden').removeClass('flex');
+                closeDeleteModalBtn?.addEventListener('click', function() {
+                    deleteModal.classList.add('hidden');
+                    deleteModal.classList.remove('flex');
                     targetDeleteId = null;
-                }
-
-                $closeDeleteModalBtn.on('click', hideDeleteModal);
-
-                $confirmDeleteBtn.on('click', function() {
-                    if (targetDeleteId) {
-                        executeDelete(targetDeleteId);
-                    }
                 });
 
-                // 4. DELETE ACTION
-                function executeDelete(id) {
-                    $.ajax({
-                        url: `{{ url('/api/categories') }}/${id}`,
-                        method: 'DELETE',
-                        headers: getHeaders(),
-                        dataType: 'json',
-                        success: function(response) {
-                            hideDeleteModal();
-                            loadCategories();
-                            showAlert('success', response.message || 'Category deleted successfully.');
-                        },
-                        error: function(xhr) {
-                            hideDeleteModal();
-                            handleAjaxError(xhr, 'Could not execute target delete.');
-                        }
-                    });
-                }
+                confirmDeleteBtn?.addEventListener('click', async function() {
+                    if (!targetDeleteId) return;
+                    try {
+                        const res = await window.api.delete(`{{ url('/api/categories') }}/${targetDeleteId}`);
+                        deleteModal.classList.add('hidden');
+                        deleteModal.classList.remove('flex');
+                        targetDeleteId = null;
+                        showLegacyAlert('success', res.message || 'Category deleted successfully.');
+                        loadCategories();
+                    } catch (err) {
+                        console.error(err);
+                        deleteModal.classList.add('hidden');
+                        deleteModal.classList.remove('flex');
+                        showLegacyAlert('error', err?.response?.message || err?.message || 'Could not execute target delete.');
+                    }
+                });
 
                 function resetForm() {
-                    $form[0].reset();
-                    $categoryIdInput.val('');
-                    $formTitle.text('New Category');
-                    $formSubtitle.text('Add a unique classification label.');
-                    $saveBtn.text('Save Record');
-
-                    $cancelBtn.addClass('hidden');
-                    $saveBtn.removeClass('w-2/3').addClass('w-full');
+                    form.reset();
+                    categoryIdInput.value = '';
+                    formTitle.textContent = 'New Category';
+                    formSubtitle.textContent = 'Add a unique classification label.';
+                    saveBtn.textContent = 'Save Record';
+                    cancelBtn.classList.add('hidden');
+                    saveBtn.classList.remove('w-2/3');
+                    saveBtn.classList.add('w-full');
+                    clearLegacyAlerts();
                 }
 
-                $cancelBtn.on('click', resetForm);
+                cancelBtn?.addEventListener('click', resetForm);
 
-                // Initial setup and execution load
+                // Initial load
                 loadCategories();
-                refreshIcons();
+                if (window.initLucideIcons) window.initLucideIcons();
             });
         </script>
     @endpush
